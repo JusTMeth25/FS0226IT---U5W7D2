@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
@@ -16,6 +16,7 @@ import { useAuth, useToast } from '../context/contexts'
 import { cercaTracce, type Traccia } from '../api/itunes'
 import { AnteprimaAudio, VELOCITA_45 } from '../three/anteprima'
 import { Crackle } from '../three/crackle'
+import type { Mixer } from '../three/TurntableScene'
 
 const TurntableScene = lazy(() => import('../three/TurntableScene'))
 
@@ -68,6 +69,8 @@ export default function DiscoPage() {
   const [progresso, setProgresso] = useState(0)
   const [urlGuasto, setUrlGuasto] = useState<string | null>(null)
   const player = useRef<AnteprimaAudio | null>(null)
+  const [caricato, setCaricato] = useState<string | null>(null)
+  const [tagliato, setTagliato] = useState(false)
 
   useEffect(() => {
     if (!chiaveRicerca || !artista || !titolo) return
@@ -94,12 +97,23 @@ export default function DiscoPage() {
     p.onProgresso = setProgresso
     // finiti i 30 secondi la puntina si alza da sola
     p.onFine = () => setSuona(false)
-    p.onErrore = () => setUrlGuasto(p.url)
+    p.onErrore = (url) => setUrlGuasto(url)
     return () => {
       p.dispose()
       player.current = null
     }
   }, [])
+
+  // l'anteprima si scarica subito: cosi' lo scratch e' pronto anche prima di premere play
+  useEffect(() => {
+    if (!urlAnteprima) return
+    const p = (player.current ??= new AnteprimaAudio())
+    let vivo = true
+    p.carica(urlAnteprima).then(() => vivo && p.caricato && setCaricato(urlAnteprima))
+    return () => {
+      vivo = false
+    }
+  }, [urlAnteprima])
 
   useEffect(() => {
     const p = (player.current ??= new AnteprimaAudio())
@@ -107,15 +121,55 @@ export default function DiscoPage() {
       p.ferma()
       return
     }
-    p.carica(urlAnteprima)
     // la musica parte quando la puntina tocca il disco
-    const t = window.setTimeout(() => void p.suona(), 1400)
+    const t = window.setTimeout(() => void p.carica(urlAnteprima).then(() => p.suona()), 1400)
     return () => window.clearTimeout(t)
   }, [suona, urlAnteprima])
 
   useEffect(() => {
-    if (player.current) player.current.velocita = giri === 45 ? VELOCITA_45 : 1
-  }, [giri, urlAnteprima])
+    if (player.current) player.current.velocitaBase = giri === 45 ? VELOCITA_45 : 1
+  }, [giri, caricato])
+
+  const mixerPronto = !!urlAnteprima && caricato === urlAnteprima
+  const mixer = useMemo<Mixer>(
+    () => ({
+      velocita: () => player.current?.velocitaAttuale ?? null,
+      scratch: (v) => player.current?.scratch(v),
+      fineScratch: () => player.current?.fineScratch(),
+    }),
+    [],
+  )
+
+  const taglia = (chiuso: boolean) => {
+    player.current?.taglia(chiuso)
+    setTagliato(chiuso)
+  }
+
+  // barra spaziatrice tenuta premuta = crossfader chiuso (transformer scratch)
+  useEffect(() => {
+    if (!mixerPronto) return
+    const fuoriDaiCampi = (e: KeyboardEvent) =>
+      !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLButtonElement)
+    const giu = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || !fuoriDaiCampi(e)) return
+      e.preventDefault()
+      if (!e.repeat) {
+        player.current?.taglia(true)
+        setTagliato(true)
+      }
+    }
+    const su = (e: KeyboardEvent) => {
+      if (e.code !== 'Space') return
+      player.current?.taglia(false)
+      setTagliato(false)
+    }
+    window.addEventListener('keydown', giu)
+    window.addEventListener('keyup', su)
+    return () => {
+      window.removeEventListener('keydown', giu)
+      window.removeEventListener('keyup', su)
+    }
+  }, [mixerPronto])
 
   // fruscio: parte solo dopo un click, come vogliono i browser; sotto la musica resta leggero
   useEffect(() => {
@@ -183,7 +237,7 @@ export default function DiscoPage() {
         <section className="disco__palco" aria-label="Giradischi">
           <div className="disco__canvas">
             <Suspense fallback={<Loader testo="Monto il giradischi…" />}>
-              <TurntableScene disco={disco} inRiproduzione={suona} giri={giri} />
+              <TurntableScene disco={disco} inRiproduzione={suona} giri={giri} mixer={mixerPronto ? mixer : undefined} />
             </Suspense>
           </div>
           <div className="consolle">
@@ -206,8 +260,35 @@ export default function DiscoPage() {
               <input type="checkbox" checked={audio} onChange={(e) => setAudio(e.target.checked)} />
               fruscio
             </label>
-            <span className="consolle__hint">trascina per girare intorno</span>
+            <span className="consolle__hint">
+              {mixerPronto ? 'trascina il disco per lo scratch · fuori dal disco giri la visuale' : 'trascina per girare intorno'}
+            </span>
           </div>
+
+          {mixerPronto && (
+            <div className="deck" role="group" aria-label="Controlli da DJ">
+              <button
+                type="button"
+                className={`deck__cut ${tagliato ? 'deck__cut--chiuso' : ''}`}
+                onPointerDown={() => taglia(true)}
+                onPointerUp={() => taglia(false)}
+                onPointerLeave={() => tagliato && taglia(false)}
+                title="Tieni premuto (o tieni premuta la barra spaziatrice) per tagliare il suono mentre fai scratch"
+              >
+                CUT <kbd>spazio</kbd>
+              </button>
+              <button
+                type="button"
+                className="deck__backspin"
+                onClick={() => player.current?.backspin()}
+                disabled={!suona}
+                title="Lancia il disco all'indietro: il motore lo riprende da solo"
+              >
+                ⟲ Backspin
+              </button>
+              <span className="deck__nota">Scratch sull’anteprima: mano sul disco, avanti e indietro.</span>
+            </div>
+          )}
 
           <div className={`anteprima-audio ${suona && urlAnteprima ? 'anteprima-audio--in-onda' : ''}`} aria-live="polite">
             {traccia === undefined && <p className="anteprima-audio__stato">Cerco un’anteprima su iTunes…</p>}

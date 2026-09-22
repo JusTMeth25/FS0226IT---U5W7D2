@@ -24,6 +24,7 @@ import java.util.List;
 public class DataInitializer implements CommandLineRunner {
 
     private static final String IMG = "https://upload.wikimedia.org/wikipedia/";
+    private static final String ITUNES = "https://audio-ssl.itunes.apple.com/itunes-assets/";
 
     private final UtenteRepository utenteRepository;
     private final DiscoRepository discoRepository;
@@ -96,6 +97,22 @@ public class DataInitializer implements CommandLineRunner {
                         "Il disco che ha spinto Michael Jackson giu' dalla vetta di Billboard.",
                         IMG + "en/b/b7/NirvanaNevermindalbumcover.jpg",
                         "25.90", "11.00", "Universal Music Italia", true),
+                conAnteprima(disco("All Eyez on Me", "2Pac", "Hip hop", 1996,
+                        "Doppio album della West Coast: California Love, Ambitionz Az a Ridah, 2 of Amerikaz Most Wanted.",
+                        IMG + "en/1/16/Alleyezonme.jpg",
+                        "44.90", "23.50", "Universal Music Italia", true),
+                        // Hit 'Em Up non e' nell'album: e' il lato B del singolo How Do U Want It (su iTunes in Greatest Hits)
+                        "Hit 'Em Up",
+                        ITUNES + "AudioPreview211/v4/2b/d5/7b/2bd57b22-f7c7-aa74-f09d-03691390b8ff/mzaf_16067229147945979824.plus.aac.p.m4a",
+                        "https://music.apple.com/it/album/hit-em-up/1440661662?i=1440661926"),
+                // la versione in studio con Travis Scott e' solo nello store US: la ricerca automatica (store IT) trova quella live
+                conAnteprima(disco("Sky Walker", "Miguel feat. Travis Scott", "R&B", 2017,
+                        "Singolo da War & Leisure: basso che rimbalza e la strofa di Travis Scott.",
+                        IMG + "en/4/4a/Miguel_Sky_Walker.jpg",
+                        "22.90", "10.80", "Sony Music Distribuzione", true),
+                        "Sky Walker (feat. Travis Scott)",
+                        ITUNES + "AudioPreview221/v4/5f/8b/81/5f8b811d-f557-083c-6473-f2eb852f7f3c/mzaf_12176439196876779053.plus.aac.p.m4a",
+                        "https://music.apple.com/us/album/sky-walker-feat-travis-scott/1305418479?i=1305422743"),
                 disco("Anima Latina", "Lucio Battisti", "Cantautorato", 1974,
                         "Ristampa in arrivo: scheda ancora in preparazione.",
                         IMG + "en/6/64/Lucio_Battisti_-_Anima_latina.jpg",
@@ -109,6 +126,13 @@ public class DataInitializer implements CommandLineRunner {
                         IMG + "en/2/26/Daft_Punk_-_Random_Access_Memories.png",
                         "39.90", "21.30", "Sony Music Distribuzione", false)
         ));
+    }
+
+    private Disco conAnteprima(Disco d, String brano, String url, String link) {
+        d.setAnteprimaBrano(brano);
+        d.setAnteprimaUrl(url);
+        d.setAnteprimaLink(link);
+        return d;
     }
 
     private Disco disco(String titolo, String artista, String genere, int anno, String descrizione,

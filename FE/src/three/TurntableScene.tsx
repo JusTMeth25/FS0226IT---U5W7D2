@@ -1,15 +1,28 @@
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { ContactShadows, OrbitControls, RoundedBox } from '@react-three/drei'
-import { Suspense, useRef } from 'react'
+import { Suspense, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { Studio } from './Studio'
 import { VinylRecord, type VinylInfo } from './VinylRecord'
+
+/** Collegamento fra la mano sul disco e il motore audio. */
+export interface Mixer {
+  /** Velocita' dell'audio (1 = 33⅓ giri), null se non c'e' audio caricato. */
+  velocita: () => number | null
+  scratch: (velocita: number) => void
+  fineScratch: () => void
+}
 
 interface Props {
   disco: VinylInfo
   inRiproduzione: boolean
   giri: 33 | 45
+  mixer?: Mixer
 }
+
+/** Velocita' angolare di un disco a 33⅓ giri, in radianti al secondo. */
+const OMEGA_33 = ((100 / 3) * Math.PI * 2) / 60
+const SU = new THREE.Vector3(0, 1, 0)
 
 const ALTEZZA_PIATTO = 0.36
 const PERNO: [number, number, number] = [2.05, 0.52, -1.35]
@@ -17,18 +30,109 @@ const ANGOLO_RIPOSO = 0.12
 const ANGOLO_INIZIO = -0.4
 const ANGOLO_FINE = -0.52
 
-function Giradischi({ disco, inRiproduzione, giri }: Props) {
+function Giradischi({ disco, inRiproduzione, giri, mixer }: Props) {
   const piatto = useRef<THREE.Group>(null)
+  const vinile = useRef<THREE.Group>(null)
   const braccio = useRef<THREE.Group>(null)
   const alzata = useRef<THREE.Group>(null)
   const velocita = useRef(0)
   const avanzamento = useRef(0)
+  const get = useThree((s) => s.get)
+  /** Accende o spegne la rotazione della telecamera (OrbitControls con makeDefault). */
+  const orbita = (attiva: boolean) => {
+    const c = get().controls as unknown as { enabled: boolean } | null
+    if (c) c.enabled = attiva
+  }
+
+  // ---------- scratch: il disco segue la mano, il piatto sotto continua a girare ----------
+  const angoloDisco = useRef(0)
+  const omegaDisco = useRef(0)
+  const mano = useRef({ attiva: false, presa: 0, obiettivo: 0 })
+  const sopra = useRef(false)
+
+  // sopra al disco la telecamera non ruota: il trascinamento serve allo scratch
+  const entra = () => {
+    if (!mixer) return
+    sopra.current = true
+    orbita(false)
+    if (!mano.current.attiva) document.body.style.cursor = 'grab'
+  }
+  const esce = () => {
+    sopra.current = false
+    if (mano.current.attiva) return
+    orbita(true)
+    document.body.style.cursor = ''
+  }
+  const piano = useMemo(() => new THREE.Plane(), [])
+  const punto = useMemo(() => new THREE.Vector3(), [])
+
+  /** Angolo del puntatore sul piano del disco, nello stesso verso di rotation.y. */
+  const angoloPuntatore = (ray: THREE.Ray): number | null => {
+    const g = vinile.current
+    if (!g?.parent) return null
+    g.getWorldPosition(punto)
+    piano.setFromNormalAndCoplanarPoint(SU, punto)
+    if (!ray.intersectPlane(piano, punto)) return null
+    g.parent.worldToLocal(punto)
+    return Math.atan2(-punto.z, punto.x)
+  }
+
+  const giu = (e: ThreeEvent<PointerEvent>) => {
+    if (!mixer) return
+    const a = angoloPuntatore(e.ray)
+    if (a == null) return
+    e.stopPropagation()
+    ;(e.target as unknown as Element).setPointerCapture(e.pointerId)
+    document.body.style.cursor = 'grabbing'
+    mano.current = { attiva: true, presa: a - angoloDisco.current, obiettivo: angoloDisco.current }
+    mixer.scratch(0)
+  }
+
+  const muovi = (e: ThreeEvent<PointerEvent>) => {
+    if (!mano.current.attiva) return
+    const a = angoloPuntatore(e.ray)
+    if (a == null) return
+    // l'angolo salta da +π a -π: si sceglie il giro piu' vicino per avere un movimento continuo
+    let obiettivo = a - mano.current.presa
+    const prima = mano.current.obiettivo
+    obiettivo += Math.round((prima - obiettivo) / (Math.PI * 2)) * Math.PI * 2
+    mano.current.obiettivo = obiettivo
+  }
+
+  const su = (e: ThreeEvent<PointerEvent>) => {
+    if (!mano.current.attiva) return
+    ;(e.target as unknown as Element).releasePointerCapture(e.pointerId)
+    mano.current.attiva = false
+    if (sopra.current) {
+      document.body.style.cursor = 'grab'
+    } else {
+      orbita(true)
+      document.body.style.cursor = ''
+    }
+    mixer?.fineScratch()
+  }
 
   useFrame((_, dt) => {
     // il piatto accelera e frena come un motore vero, non parte a scatto
     const obiettivo = inRiproduzione ? (giri * Math.PI * 2) / 60 : 0
     velocita.current = THREE.MathUtils.damp(velocita.current, obiettivo, inRiproduzione ? 1.6 : 0.9, dt)
     if (piatto.current) piatto.current.rotation.y -= velocita.current * dt
+
+    if (mano.current.attiva) {
+      const prima = angoloDisco.current
+      angoloDisco.current = THREE.MathUtils.damp(prima, mano.current.obiettivo, 40, dt)
+      const omega = dt > 0 ? (angoloDisco.current - prima) / dt : 0
+      omegaDisco.current = omega
+      // il disco gira in verso negativo quando suona in avanti
+      mixer?.scratch(-omega / OMEGA_33)
+    } else {
+      // senza mano il disco segue l'audio (backspin, freno) o, se non c'e' audio, il piatto
+      const v = mixer?.velocita()
+      const omega = v == null ? -velocita.current : -v * OMEGA_33
+      omegaDisco.current = THREE.MathUtils.damp(omegaDisco.current, omega, 12, dt)
+      angoloDisco.current += omegaDisco.current * dt
+    }
+    if (vinile.current) vinile.current.rotation.y = angoloDisco.current
 
     // la puntina avanza lentamente verso il centro mentre suona
     if (inRiproduzione) avanzamento.current = Math.min(1, avanzamento.current + dt / 240)
@@ -77,14 +181,25 @@ function Giradischi({ disco, inRiproduzione, giri }: Props) {
           <cylinderGeometry args={[1.56, 1.56, 0.01, 96]} />
           <meshStandardMaterial color="#141414" roughness={0.95} />
         </mesh>
-        <group position={[0, 0.072, 0]}>
-          <VinylRecord disco={disco} />
-        </group>
         {/* perno centrale */}
         <mesh position={[0, 0.12, 0]}>
           <cylinderGeometry args={[0.03, 0.03, 0.14, 24]} />
           <meshStandardMaterial color="#d8d2c8" metalness={1} roughness={0.15} />
         </mesh>
+      </group>
+
+      {/* il disco non e' figlio del piatto: durante lo scratch scivola sul tappetino */}
+      <group
+        ref={vinile}
+        position={[0, ALTEZZA_PIATTO - 0.08 + 0.072, 0]}
+        onPointerDown={giu}
+        onPointerMove={muovi}
+        onPointerUp={su}
+        onPointerCancel={su}
+        onPointerOver={entra}
+        onPointerOut={esce}
+      >
+        <VinylRecord disco={disco} />
       </group>
 
       {/* braccio */}
@@ -153,6 +268,7 @@ export default function TurntableScene(props: Props) {
         <Giradischi {...props} />
         <ContactShadows position={[0, -0.74, 0]} opacity={0.55} scale={12} blur={2.6} far={3} />
         <OrbitControls
+          makeDefault
           enablePan={false}
           minDistance={4.5}
           maxDistance={10}

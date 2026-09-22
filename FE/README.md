@@ -41,6 +41,17 @@ Il fruscio sintetizzato resta sotto la musica, più basso. A 45 giri l'audio va 
 come su un giradischi vero (`preservesPitch = false`). Finiti i 30 secondi la puntina si alza da sola.
 Accanto al brano c'è il link **Ascolta su Apple Music**: le anteprime di Apple servono a promuovere i brani sul suo store.
 
+### Scratch
+
+L'anteprima viene decodificata in un `AudioBuffer` e letta da un `AudioWorklet` (`src/three/anteprima.ts`)
+a velocità variabile, anche all'indietro:
+
+- **scratch**: trascina il disco 3D avanti e indietro; la velocità della mano diventa la velocità di lettura.
+  Sopra il disco la telecamera non ruota, fuori sì;
+- **CUT** (o barra spaziatrice tenuta premuta): chiude il crossfader, per gli scratch "a taglio";
+- **Backspin**: lancia il disco all'indietro, poi il motore lo riprende;
+- **Ferma**: il disco rallenta e il suono scende di tono fino a fermarsi.
+
 In regia, nel form del disco, **Cerca su iTunes** mostra i brani trovati: si ascoltano e con **Usa** si salvano sulla scheda.
 
 ## Chi decide cosa si vede

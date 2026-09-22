@@ -2494,6 +2494,72 @@ h3 {
   font-size: 0.74rem;
 }
 
+/* deck da DJ */
+
+.deck {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 12px;
+}
+
+.deck button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: linear-gradient(180deg, #221a15, #140f0c);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+  transition: border-color 0.15s, background 0.15s, transform 0.08s, box-shadow 0.15s;
+}
+
+.deck button:hover:not(:disabled) {
+  border-color: var(--accent-2);
+}
+
+.deck button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.deck kbd {
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--line-2);
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+}
+
+.deck__cut--chiuso {
+  transform: translateY(1px);
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #160904 !important;
+  box-shadow: 0 0 24px rgba(255, 91, 31, 0.45);
+}
+
+.deck__cut--chiuso kbd {
+  color: #160904;
+  border-color: rgba(22, 9, 4, 0.4);
+}
+
+.deck__nota {
+  color: var(--dim);
+  font-size: 0.78rem;
+}
+
 /* form admin */
 
 .campi-anteprima {
