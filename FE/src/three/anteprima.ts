@@ -6,6 +6,8 @@
  * Come su un vinile vero, velocita' e intonazione vanno insieme
  * (45 giri = piu' veloce e piu' acuto, freno = "tape stop", indietro = suono al contrario).
  */
+import { sbloccaContesto } from './sbloccoAudio'
+
 export const VELOCITA_45 = 45 / (100 / 3)
 
 // Scorrimento morbido verso la velocita' obiettivo, per campione (48 kHz circa).
@@ -121,6 +123,12 @@ export class AnteprimaAudio {
     if (this.inRiproduzione && !this.scratchAttivo) this.invia(v, MOTORE)
   }
 
+  /** Da chiamare nel gestore del tocco: crea (se serve) e sblocca il contesto audio. */
+  sblocca() {
+    void this.avvia()
+    if (this.ctx) sbloccaContesto(this.ctx)
+  }
+
   private avvia(): Promise<void> {
     if (this.pronto) return this.pronto
     const ctx = new AudioContext()
@@ -218,7 +226,8 @@ export class AnteprimaAudio {
     if (!this.scratchAttivo) {
       this.scratchAttivo = true
       window.clearTimeout(this.timerBackspin)
-      void this.ctx.resume()
+      // la mano sul disco arriva da un pointerdown: e' un gesto valido per sbloccare l'audio
+      sbloccaContesto(this.ctx)
       this.dissolvi(0.9, 0.04)
     }
     this.invia(Math.max(-8, Math.min(8, velocita)), MANO)

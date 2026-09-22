@@ -244,7 +244,13 @@ export default function DiscoPage() {
             <button
               type="button"
               className={`consolle__play ${suona ? 'consolle__play--attivo' : ''}`}
-              onClick={() => setSuona((s) => !s)}
+              onClick={() => {
+                // sbloccare l'audio qui, dentro il tocco: sui telefoni dopo non si puo' piu'
+                player.current?.sblocca()
+                crackle.current ??= new Crackle()
+                crackle.current.sblocca()
+                setSuona((s) => !s)
+              }}
               aria-pressed={suona}
             >
               {suona ? '❚❚ Ferma' : '▶ Metti su'}
@@ -270,7 +276,10 @@ export default function DiscoPage() {
               <button
                 type="button"
                 className={`deck__cut ${tagliato ? 'deck__cut--chiuso' : ''}`}
-                onPointerDown={() => taglia(true)}
+                onPointerDown={() => {
+                  player.current?.sblocca()
+                  taglia(true)
+                }}
                 onPointerUp={() => taglia(false)}
                 onPointerLeave={() => tagliato && taglia(false)}
                 title="Tieni premuto (o tieni premuta la barra spaziatrice) per tagliare il suono mentre fai scratch"
@@ -280,7 +289,10 @@ export default function DiscoPage() {
               <button
                 type="button"
                 className="deck__backspin"
-                onClick={() => player.current?.backspin()}
+                onClick={() => {
+                  player.current?.sblocca()
+                  player.current?.backspin()
+                }}
                 disabled={!suona}
                 title="Lancia il disco all'indietro: il motore lo riprende da solo"
               >

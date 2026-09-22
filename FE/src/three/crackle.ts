@@ -2,6 +2,8 @@
  * Fruscio del vinile sintetizzato con Web Audio: rumore rosa filtrato
  * piu' qualche "pop" casuale. Nessun file audio da scaricare.
  */
+import { sbloccaContesto } from './sbloccoAudio'
+
 export class Crackle {
   private ctx: AudioContext | null = null
   private sorgente: AudioBufferSourceNode | null = null
@@ -44,6 +46,12 @@ export class Crackle {
     this.volume.gain.cancelScheduledValues(this.ctx.currentTime)
     this.volume.gain.setValueAtTime(this.volume.gain.value, this.ctx.currentTime)
     this.volume.gain.linearRampToValueAtTime(livello, this.ctx.currentTime + 0.6)
+  }
+
+  /** Da chiamare nel gestore del tocco: sui telefoni il contesto parte solo li'. */
+  sblocca() {
+    this.ctx ??= new AudioContext()
+    sbloccaContesto(this.ctx)
   }
 
   start() {
