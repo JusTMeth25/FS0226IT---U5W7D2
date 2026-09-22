@@ -10,11 +10,15 @@ interface Props {
   modo: 'login' | 'registrazione'
 }
 
-const DEMO = [
-  { etichetta: 'Admin', email: 'admin@vetrina.it', password: 'admin1234' },
-  { etichetta: 'Utente Anna', email: 'anna@test.it', password: 'password1' },
-  { etichetta: 'Utente Bruno', email: 'bruno@test.it', password: 'password1' },
-]
+// Sul sito pubblico l'admin ha una password segreta: si offre solo l'account visitatore.
+const DEMO =
+  import.meta.env.MODE === 'pages'
+    ? [{ etichetta: 'Visitatore', email: 'visitatore@vetrina.it', password: 'visitatore1234' }]
+    : [
+        { etichetta: 'Admin', email: 'admin@vetrina.it', password: 'admin1234' },
+        { etichetta: 'Utente Anna', email: 'anna@test.it', password: 'password1' },
+        { etichetta: 'Utente Bruno', email: 'bruno@test.it', password: 'password1' },
+      ]
 
 export default function AuthPage({ modo }: Props) {
   const { utente, login, registrazione } = useAuth()

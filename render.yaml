@@ -1,0 +1,21 @@
+# Blueprint Render: backend Spring Boot con database H2 in memoria (profilo demo).
+# Render -> New -> Blueprint -> scegli questo repository.
+services:
+  - type: web
+    name: solco-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerContext: ./BE
+    dockerfilePath: ./BE/Dockerfile
+    healthCheckPath: /api/dischi
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: demo
+      # generati da Render al primo deploy: si leggono in Dashboard -> Environment
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: FRONTEND_URLS
+        value: https://justmeth25.github.io,http://localhost:5173

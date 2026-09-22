@@ -36,10 +36,18 @@ public class DataInitializer implements CommandLineRunner {
     @Value("${app.admin.password}")
     private String adminPassword;
 
+    /** Utente di prova per il sito pubblico: creato solo se configurato (profilo demo). */
+    @Value("${app.demo.email:}")
+    private String demoEmail;
+
+    @Value("${app.demo.password:}")
+    private String demoPassword;
+
     @Override
     @Transactional
     public void run(String... args) {
         creaAdmin();
+        creaUtenteDemo();
         creaDischiEsempio();
     }
 
@@ -53,6 +61,19 @@ public class DataInitializer implements CommandLineRunner {
                 .email(email)
                 .password(passwordEncoder.encode(adminPassword))
                 .ruolo(Ruolo.ADMIN)
+                .build());
+    }
+
+    private void creaUtenteDemo() {
+        String email = demoEmail.trim().toLowerCase();
+        if (email.isEmpty() || demoPassword.isBlank() || utenteRepository.existsByEmail(email)) {
+            return;
+        }
+        utenteRepository.save(Utente.builder()
+                .nome("Visitatore")
+                .email(email)
+                .password(passwordEncoder.encode(demoPassword))
+                .ruolo(Ruolo.USER)
                 .build());
     }
 
@@ -120,6 +141,20 @@ public class DataInitializer implements CommandLineRunner {
                         "Sky Walker (feat. Travis Scott)",
                         ITUNES + "AudioPreview221/v4/5f/8b/81/5f8b811d-f557-083c-6473-f2eb852f7f3c/mzaf_12176439196876779053.plus.aac.p.m4a",
                         "https://music.apple.com/us/album/sky-walker-feat-travis-scott/1305418479?i=1305422743"),
+                conAnteprima(disco("Wish You Were Here", "Pink Floyd", "Rock", 1975,
+                        "Omaggio a Syd Barrett tra sintetizzatori e chitarre acustiche: Shine On You Crazy Diamond e la title track.",
+                        "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/aa/e0/ab/aae0ab6a-d906-a189-81bf-70b56aa43f7a/886445635843.jpg/600x600bb.jpg",
+                        "35.99", "18.99", "Warner Music Italia", true),
+                        "Wish You Were Here",
+                        ITUNES + "AudioPreview221/v4/ca/73/b0/ca73b075-9f43-5ba2-4a9c-494d2e2b1d6e/mzaf_16835053037302358726.plus.aac.p.m4a",
+                        "https://music.apple.com/it/album/wish-you-were-here/1065973975?i=1065973980"),
+                conAnteprima(disco("All I Want Is You", "Miguel", "R&B/Soul", 2010,
+                        "Il debutto di Miguel: R&B elegante, con Sure Thing e la title track insieme a J. Cole.",
+                        "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/4b/85/3f/4b853f59-1e43-5e93-54cf-5a799c04ed1d/884977670820.jpg/600x600bb.jpg",
+                        "23.50", "11.20", "Sony Music Distribuzione", true),
+                        "All I Want Is You (feat. J.Cole)",
+                        ITUNES + "AudioPreview221/v4/b5/e5/ce/b5e5ce3b-c1ab-ef44-4df5-77d0fcd03d32/mzaf_13217861548147350189.plus.aac.p.m4a",
+                        "https://music.apple.com/it/album/all-i-want-is-you-feat-j-cole/439618070?i=439618072"),
                 disco("Anima Latina", "Lucio Battisti", "Cantautorato", 1974,
                         "Ristampa in arrivo: scheda ancora in preparazione.",
                         IMG + "en/6/64/Lucio_Battisti_-_Anima_latina.jpg",

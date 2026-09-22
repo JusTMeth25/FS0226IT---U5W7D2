@@ -73,8 +73,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   } catch {
     throw new ApiError(
       0,
-      window.location.hostname.endsWith('github.io')
-        ? 'Questa è la versione pubblicata su GitHub Pages: il backend gira solo in locale. Avvia avvio.cmd sul tuo PC e ricarica la pagina.'
+      import.meta.env.MODE === 'pages'
+        ? 'Il server non risponde: si sta ancora svegliando oppure è in manutenzione. Riprova tra qualche secondo.'
         : 'Server non raggiungibile. Il backend è acceso?',
     )
   }

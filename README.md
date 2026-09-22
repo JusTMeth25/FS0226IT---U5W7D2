@@ -14,13 +14,30 @@ in due finestre e apre il browser quando il backend risponde. Per fermare tutto 
 
 ## Versione pubblicata
 
-https://justmeth25.github.io/FS0226IT---U5W7D2/
+- Frontend: https://justmeth25.github.io/FS0226IT---U5W7D2/ (GitHub Pages)
+- Backend: https://solco-api.onrender.com (Render, piano gratuito, profilo `demo`)
 
-GitHub Pages ospita solo il frontend (file statici). Il backend con il database gira in locale:
-il sito pubblicato funziona sul PC dove è acceso `avvio.cmd` (il backend accetta anche l'origine `https://justmeth25.github.io`).
-Altrove mostra un avviso invece della vetrina.
+Il backend pubblico usa il profilo **`demo`** (`BE/src/main/resources/application-demo.properties`):
+database **H2 in memoria** dentro lo stesso server, nessun servizio di database esterno.
 
-Per aggiornare la versione pubblicata:
+- Ogni riavvio riparte dal seed di `DataInitializer`: dischi, utenti registrati e preferiti aggiunti online si azzerano.
+  Per rendere permanente un disco va aggiunto al seed.
+- Il piano gratuito di Render si addormenta dopo circa 15 minuti senza visite: la prima richiesta successiva
+  impiega fino a un minuto (il sito mostra un messaggio d'attesa).
+- Account di prova per i visitatori: `visitatore@vetrina.it` / `visitatore1234` (ruolo USER).
+- La password dell'admin **non** è nel repository: Render la genera al primo deploy (`ADMIN_PASSWORD`)
+  e si legge in Dashboard → servizio `solco-api` → Environment.
+
+### Primo deploy del backend (una volta sola)
+
+1. Accedi a https://render.com con l'account GitHub.
+2. **New → Blueprint**, scegli il repository `FS0226IT---U5W7D2`: Render legge `render.yaml` e crea il servizio `solco-api`.
+3. Conferma con **Apply**. La prima build Docker richiede qualche minuto.
+4. Se Render assegna un indirizzo diverso da `https://solco-api.onrender.com`, aggiorna `FE/.env.pages` e ripubblica il frontend.
+
+Ogni push su `main` fa ripartire il deploy del backend in automatico.
+
+### Aggiornare il frontend pubblicato
 
 ```bash
 cd FE
