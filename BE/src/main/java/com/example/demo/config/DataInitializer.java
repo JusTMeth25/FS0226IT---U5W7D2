@@ -101,7 +101,14 @@ public class DataInitializer implements CommandLineRunner {
                         "Doppio album della West Coast: California Love, Ambitionz Az a Ridah, 2 of Amerikaz Most Wanted.",
                         IMG + "en/1/16/Alleyezonme.jpg",
                         "44.90", "23.50", "Universal Music Italia", true),
-                        // Hit 'Em Up non e' nell'album: e' il lato B del singolo How Do U Want It (su iTunes in Greatest Hits)
+                        "California Love (feat. Dr. Dre & Roger Troutman) [Remix]",
+                        ITUNES + "AudioPreview211/v4/25/c3/5d/25c35d8e-13a2-a67a-5750-9c8fac55ad3b/mzaf_81027516995072444.plus.aac.p.m4a",
+                        "https://music.apple.com/it/album/california-love-feat-dr-dre-roger-troutman-remix/1588492978?i=1588493576"),
+                // lato B del singolo How Do U Want It: su iTunes si trova nella raccolta Greatest Hits
+                conAnteprima(disco("Hit 'Em Up", "2Pac feat. Outlawz", "Hip hop", 1996,
+                        "Il diss track piu' famoso della storia del rap, lato B del singolo How Do U Want It. Death Row, 1996.",
+                        IMG + "en/3/3e/2pac_-_Hit_%27Em_Up_promo.jpg",
+                        "19.90", "9.20", "Universal Music Italia", true),
                         "Hit 'Em Up",
                         ITUNES + "AudioPreview211/v4/2b/d5/7b/2bd57b22-f7c7-aa74-f09d-03691390b8ff/mzaf_16067229147945979824.plus.aac.p.m4a",
                         "https://music.apple.com/it/album/hit-em-up/1440661662?i=1440661926"),

@@ -1,5 +1,7 @@
 package com.example.demo.exception;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -16,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestControllerAdvice
 public class GestoreEccezioni {
 
@@ -53,8 +56,16 @@ public class GestoreEccezioni {
         return risposta(HttpStatus.NOT_FOUND, "Risorsa non trovata");
     }
 
+    /** Vincoli del database (valore troppo lungo, duplicato...): colpa dei dati inviati, non del server. */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> gestisciVincoliDb(DataIntegrityViolationException ex) {
+        log.warn("Dati rifiutati dal database: {}", ex.getMostSpecificCause().getMessage());
+        return risposta(HttpStatus.BAD_REQUEST, "Dati non accettati dal database: controlla che nessun campo sia troppo lungo");
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> gestisciGenerica(Exception ex) {
+        log.error("Errore non gestito", ex);
         return risposta(HttpStatus.INTERNAL_SERVER_ERROR, "Errore interno del server");
     }
 

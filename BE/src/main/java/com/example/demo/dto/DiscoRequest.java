@@ -16,7 +16,7 @@ public record DiscoRequest(
         @Size(max = 100) String genere,
         @Min(1900) @Max(2100) Integer anno,
         @Size(max = 2000) String descrizione,
-        @Size(max = 500) String copertinaUrl,
+        @Size(max = 1000, message = "indirizzo troppo lungo (max 1000 caratteri)") String copertinaUrl,
         @NotNull @DecimalMin("0.00") BigDecimal prezzoVendita,
         @Size(max = 500) @Pattern(regexp = "^https://.*", message = "deve essere un indirizzo https") String anteprimaUrl,
         @Size(max = 255) String anteprimaBrano,

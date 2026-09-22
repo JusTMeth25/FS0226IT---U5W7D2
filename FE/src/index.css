@@ -2562,6 +2562,23 @@ h3 {
 
 /* form admin */
 
+.ricerca-itunes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ricerca-itunes .campo--cerca {
+  flex: 1;
+  min-width: 200px;
+}
+
+.ricerca-itunes .consolle__giri button {
+  min-width: 44px;
+  height: 32px;
+}
+
 .campi-anteprima {
   display: flex;
   flex-direction: column;

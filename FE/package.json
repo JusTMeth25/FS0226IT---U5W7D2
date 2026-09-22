@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:pages": "tsc -b && vite build --mode pages && node -e \"require('fs').copyFileSync('dist/index.html','dist/404.html');require('fs').writeFileSync('dist/.nojekyll','')\""
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

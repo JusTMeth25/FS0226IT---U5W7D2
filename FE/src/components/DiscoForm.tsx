@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
+import { createPortal } from 'react-dom'
 import { api, ApiError } from '../api/client'
-import { cercaTracce, type Traccia } from '../api/itunes'
+import { cercaLibera, type Paese, type Traccia } from '../api/itunes'
 import type { DiscoAdmin, DiscoRequest } from '../api/types'
 import Copertina from './Copertina'
 import { formattaEuro, margine } from './format'
@@ -41,7 +42,8 @@ const daDisco = (d?: DiscoAdmin): Campi => ({
   anteprimaLink: d?.anteprimaLink ?? '',
   prezzoAcquisto: d?.prezzoAcquisto?.toString() ?? '',
   fornitore: d?.fornitore ?? '',
-  pubblicato: d?.pubblicato ?? false,
+  // un disco nuovo va in vetrina, a meno di spegnere l'interruttore
+  pubblicato: d?.pubblicato ?? true,
 })
 
 const vuotoANull = (s: string) => (s.trim() === '' ? null : s.trim())
@@ -56,18 +58,25 @@ export default function DiscoForm({ iniziale, onChiudi, onSalvato }: Props) {
   // ---------- ricerca anteprime su iTunes ----------
   const [risultati, setRisultati] = useState<Traccia[] | null>(null)
   const [cercando, setCercando] = useState(false)
+  const [termine, setTermine] = useState<string | null>(null)
+  const [paese, setPaese] = useState<Paese>('IT')
+  // finche' non lo si modifica, il testo da cercare segue artista e titolo
+  const testoRicerca = termine ?? `${c.artista} ${c.titolo}`.trim()
   const [inAscolto, setInAscolto] = useState<string | null>(null)
   const prova = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => () => prova.current?.pause(), [])
 
   const cerca = async () => {
-    if (!c.artista.trim() || !c.titolo.trim()) {
-      setMessaggio('Scrivi prima titolo e artista: servono per la ricerca')
+    if (!testoRicerca) {
+      setMessaggio('Scrivi cosa cercare: brano, artista o album')
       return
     }
+    setMessaggio(null)
     setCercando(true)
-    setRisultati(await cercaTracce(c.artista.trim(), c.titolo.trim()))
+    // testo non modificato a mano: si cerca anche nella discografia dell'artista
+    const disco = termine === null && c.artista.trim() && c.titolo.trim() ? { artista: c.artista.trim(), titolo: c.titolo.trim() } : undefined
+    setRisultati(await cercaLibera(testoRicerca, paese, disco))
     setCercando(false)
   }
 
@@ -87,11 +96,22 @@ export default function DiscoForm({ iniziale, onChiudi, onSalvato }: Props) {
   }
 
   const usa = (t: Traccia) => {
-    setC((p) => ({ ...p, anteprimaUrl: t.anteprimaUrl, anteprimaBrano: t.brano, anteprimaLink: t.link }))
+    setC((p) => ({
+      ...p,
+      anteprimaUrl: t.anteprimaUrl,
+      anteprimaBrano: t.brano,
+      anteprimaLink: t.link,
+      // campi ancora vuoti: si riempiono con i dati di iTunes
+      artista: p.artista || t.artista,
+      titolo: p.titolo || t.album.replace(/ - (Single|EP)$/, ''),
+      copertinaUrl: p.copertinaUrl || t.copertinaGrande || '',
+    }))
     prova.current?.pause()
     setInAscolto(null)
     setRisultati(null)
   }
+
+  const usaCopertina = (t: Traccia) => t.copertinaGrande && setC((p) => ({ ...p, copertinaUrl: t.copertinaGrande ?? '' }))
 
   const togliAnteprima = () => setC((p) => ({ ...p, anteprimaUrl: '', anteprimaBrano: '', anteprimaLink: '' }))
 
@@ -152,7 +172,8 @@ export default function DiscoForm({ iniziale, onChiudi, onSalvato }: Props) {
     </label>
   )
 
-  return (
+  // portal su body: dentro <main> la modale resterebbe sotto la navbar (stacking context)
+  return createPortal(
     <motion.div className="modale" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={onChiudi}>
       <motion.div
         className="modale__pannello"
@@ -207,12 +228,38 @@ export default function DiscoForm({ iniziale, onChiudi, onSalvato }: Props) {
             <fieldset className="campi-anteprima">
               <legend>Anteprima audio <span>· pubblica</span></legend>
               <p className="campi-anteprima__nota">
-                Senza anteprima, la pagina del disco la cerca da sola su iTunes. Qui puoi sceglierne una precisa.
+                Cerca il brano su iTunes: con <strong>Usa</strong> prendi anteprima e link Apple Music
+                (e riempi copertina, artista e titolo se sono vuoti). <strong>Copertina</strong> usa solo l’immagine dell’album.
+                Senza anteprima, la pagina del disco ne cerca una da sola.
               </p>
-              <div className="campi-anteprima__azioni">
+              <div className="ricerca-itunes">
+                <label className="campo campo--cerca">
+                  <span className="sr-only">Cerca su iTunes</span>
+                  <input
+                    type="search"
+                    value={testoRicerca}
+                    placeholder="brano, artista o album…"
+                    onChange={(e) => setTermine(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        void cerca()
+                      }
+                    }}
+                  />
+                </label>
+                <div className="consolle__giri" role="group" aria-label="Store iTunes">
+                  {(['IT', 'US'] as const).map((p) => (
+                    <button key={p} type="button" className={paese === p ? 'attivo' : ''} onClick={() => setPaese(p)} title={p === 'US' ? 'Alcune versioni esistono solo nello store americano' : 'Store italiano'}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
                 <button type="button" className="bottone bottone--piccolo" onClick={() => void cerca()} disabled={cercando}>
-                  {cercando ? 'Cerco…' : '♫ Cerca su iTunes'}
+                  {cercando ? 'Cerco…' : '♫ Cerca'}
                 </button>
+              </div>
+              <div className="campi-anteprima__azioni">
                 {c.anteprimaUrl && (
                   <>
                     <button type="button" className="bottone bottone--piccolo bottone--fantasma" onClick={() => ascolta(c.anteprimaUrl)}>
@@ -227,17 +274,22 @@ export default function DiscoForm({ iniziale, onChiudi, onSalvato }: Props) {
 
               {risultati && (
                 <ul className="risultati-itunes">
-                  {risultati.length === 0 && <li className="risultati-itunes__vuoto">Nessun brano trovato per questo disco.</li>}
-                  {risultati.slice(0, 8).map((t) => (
+                  {risultati.length === 0 && <li className="risultati-itunes__vuoto">Nessun brano trovato: prova altre parole o lo store US.</li>}
+                  {risultati.slice(0, 12).map((t) => (
                     <li key={t.anteprimaUrl}>
                       {t.copertina && <img src={t.copertina} alt="" width={36} height={36} />}
                       <span className="risultati-itunes__testo">
                         <strong>{t.brano}</strong>
-                        <small>{t.album}</small>
+                        <small>{t.artista} · {t.album}</small>
                       </span>
                       <button type="button" className="icona" onClick={() => ascolta(t.anteprimaUrl)} aria-label={`Ascolta ${t.brano}`}>
                         {inAscolto === t.anteprimaUrl ? '❚❚' : '▶'}
                       </button>
+                      {t.copertinaGrande && (
+                        <button type="button" className="bottone bottone--piccolo bottone--fantasma" onClick={() => usaCopertina(t)} title="Usa la copertina di questo album">
+                          Copertina
+                        </button>
+                      )}
                       <button type="button" className="bottone bottone--piccolo" onClick={() => usa(t)}>Usa</button>
                     </li>
                   ))}
@@ -276,6 +328,7 @@ export default function DiscoForm({ iniziale, onChiudi, onSalvato }: Props) {
           </form>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body,
   )
 }

@@ -71,7 +71,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   try {
     res = await fetch(`${BASE_URL}${path}`, { ...init, headers })
   } catch {
-    throw new ApiError(0, 'Server non raggiungibile. Il backend è acceso?')
+    throw new ApiError(
+      0,
+      window.location.hostname.endsWith('github.io')
+        ? 'Questa è la versione pubblicata su GitHub Pages: il backend gira solo in locale. Avvia avvio.cmd sul tuo PC e ricarica la pagina.'
+        : 'Server non raggiungibile. Il backend è acceso?',
+    )
   }
 
   if (res.status === 401 && token) onUnauthorized?.()

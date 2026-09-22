@@ -52,7 +52,16 @@ a velocità variabile, anche all'indietro:
 - **Backspin**: lancia il disco all'indietro, poi il motore lo riprende;
 - **Ferma**: il disco rallenta e il suono scende di tono fino a fermarsi.
 
-In regia, nel form del disco, **Cerca su iTunes** mostra i brani trovati: si ascoltano e con **Usa** si salvano sulla scheda.
+## Aggiungere un vinile
+
+1. Accedi come admin, vai in **Regia** e premi **+ Nuovo disco**.
+2. Nel riquadro *Anteprima audio* scrivi brano o album (es. `Miguel Adorn`), scegli lo store **IT** o **US** e premi **Cerca**.
+3. Ascolta i risultati con ▶ e premi **Usa** su quello giusto: salva anteprima e link Apple Music
+   e riempie da solo copertina (600×600 da iTunes), artista e titolo se sono vuoti.
+   **Copertina** prende solo l'immagine dell'album.
+4. Correggi titolo/artista se serve, aggiungi prezzo di vendita (obbligatorio), acquisto e fornitore.
+5. *Pubblicato in vetrina* è acceso di default: spegnilo solo se vuoi una bozza.
+6. **Crea disco**.
 
 ## Chi decide cosa si vede
 

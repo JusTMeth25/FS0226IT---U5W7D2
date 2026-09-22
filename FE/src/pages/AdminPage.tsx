@@ -174,7 +174,8 @@ export default function AdminPage() {
             onSalvato={(d) => {
               sostituisci(d)
               setForm({ aperto: false })
-              mostra(form.disco ? 'Disco aggiornato' : `«${d.titolo}» aggiunto`, 'ok')
+              if (!d.pubblicato) mostra(`«${d.titolo}» salvato in bozza: in vetrina lo vede solo l’admin`, 'info')
+              else mostra(form.disco ? 'Disco aggiornato' : `«${d.titolo}» è in vetrina`, 'ok')
             }}
           />
         )}

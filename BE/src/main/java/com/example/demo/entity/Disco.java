@@ -40,6 +40,7 @@ public class Disco {
     @Column(length = 2000)
     private String descrizione;
 
+    @Column(length = 1000)
     private String copertinaUrl;
 
     @Column(nullable = false, precision = 10, scale = 2)

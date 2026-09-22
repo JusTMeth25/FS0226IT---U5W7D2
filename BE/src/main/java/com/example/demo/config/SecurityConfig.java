@@ -34,8 +34,8 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
 
-    @Value("${app.frontend-url}")
-    private String frontendUrl;
+    @Value("${app.frontend-urls}")
+    private List<String> frontendUrls;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -68,7 +68,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(frontendUrl));
+        config.setAllowedOrigins(frontendUrls);
+        // il sito su GitHub Pages (pubblico, https) chiama il backend su localhost: Chrome lo chiede esplicitamente
+        config.setAllowPrivateNetwork(true);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
 
