@@ -53,6 +53,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
+                        // la radice rimanda al sito pubblico (HomeController)
+                        .requestMatchers(HttpMethod.GET, "/").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/registrazione").permitAll()
                         // La vetrina e' pubblica in lettura
                         .requestMatchers(HttpMethod.GET, "/api/dischi", "/api/dischi/**").permitAll()
